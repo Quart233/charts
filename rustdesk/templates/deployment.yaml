@@ -64,9 +64,11 @@ spec:
           ports:
             - name: hbbr-1
               containerPort: 21117
+              hostPort: 21117
               protocol: TCP
             - name: hbbr-2
               containerPort: 21119
+              hostPort: 21119
               protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
