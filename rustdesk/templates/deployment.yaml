@@ -5,9 +5,7 @@ metadata:
   labels:
     {{- include "rustdesk.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "rustdesk.selectorLabels" . | nindent 6 }}
@@ -19,7 +17,7 @@ spec:
       {{- end }}
       labels:
         {{- include "rustdesk.labels" . | nindent 8 }}
-	{{- with .Values.podLabels }}
+	      {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
@@ -27,27 +25,49 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "rustdesk.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: hbbs
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["hbbs"]
           ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
+            - name: hbbs-1
+              containerPort: 21114
+              hostPort: 21114
               protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
+            - name: hbbs-2
+              containerPort: 21115
+              hostPort: 21115
+              protocol: TCP
+            - name: hbbs-3
+              containerPort: 21116
+              hostPort: 21116
+              protocol: TCP
+            - name: hbbs-4
+              containerPort: 21116
+              hostPort: 21116
+              protocol: UDP
+            - name: hbbs-5
+              containerPort: 21118
+              hostPort: 21118
+              protocol: UDP
+        - name: hbbr
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["hbbr"]
+          ports:
+            - name: hbbr-1
+              containerPort: 21117
+              protocol: TCP
+            - name: hbbr-2
+              containerPort: 21119
+              protocol: TCP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.volumeMounts }}
