@@ -4,26 +4,26 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Helm: Install Rustdesk",
+            "label": "Helm: Install",
             "type": "shell",
             "command": "helm",
             "args": [
                 "install",
                 "-n",
                 "${input:NAMESPACE}",
-                "rustdesk",
-                "rustdesk"
+                "${input:RELEASE}",
+                "${input:CHART}",
             ]
         },
         {
-            "label": "Helm: Templete Rustdesk",
+            "label": "Helm: Templete",
             "type": "shell",
             "command": "helm",
             "args": [
                 "template",
                 "-s",
-                "templates/deployment.yaml",
-                "rustdesk"
+                "${input:FILENAME}",
+                "${input:CHART}",
             ]
         }
     ],
@@ -32,6 +32,21 @@
             "id": "NAMESPACE",
             "description": "命名空间 (NAMESPACE)",
             "type": "promptString"
-        }
+        },
+        {
+            "id": "RELEASE",
+            "description": "部署名称 (RELEASE)",
+            "type": "promptString"
+        },
+        {
+            "id": "CHART",
+            "description": "模版名称 (CHART)",
+            "type": "promptString"
+        },
+        {
+            "id": "FILENAME",
+            "description": "文件名称 (FILENAME)",
+            "type": "promptString"
+        },
     ]
 }
