@@ -8,6 +8,8 @@
             "type": "shell",
             "command": "helm",
             "args": [
+                "--kube-context",
+                "${input:CONTEXT}",
                 "install",
                 "-n",
                 "${input:NAMESPACE}",
@@ -28,6 +30,11 @@
         }
     ],
     "inputs": [
+        {
+            "id": "CONTEXT",
+            "description": "目标集群 (CONTEXT)",
+            "type": "promptString"
+        },
         {
             "id": "NAMESPACE",
             "description": "命名空间 (NAMESPACE)",
