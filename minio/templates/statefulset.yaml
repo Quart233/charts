@@ -64,7 +64,7 @@ spec:
                   name: {{ .Release.Name }}-root
                   key: password
           
-          VolumeMounts:
+          volumeMounts:
             - name: data
               readOnly: false
               mountPath: /data
