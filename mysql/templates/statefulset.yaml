@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-headless
+
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "mysql-replication.selectorLabels" . | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  serviceName: {{ .Release.Name }}-headless
+  selector:
+    matchLabels:
+      {{- include "mysql-replication.selectorLabels" . | nindent 6 }}
+  replicas: 2
+  minReadySeconds: 5 # by default is 0
+  template:
+    metadata:
+      labels:
+        {{- include "mysql-replication.labels" . | nindent 8 }}
+    spec:
+      securityContext:
+        fsGroup: 999
+      terminationGracePeriodSeconds: 10
+
+      # 卷定义
+      volumes:
+        - hostPath:
+            path: /etc/localtime
+            type: 'File'
+          name: host-time
+        - name: entrypoint
+          configMap:
+            name: {{ .Release.Name }}-entrypoint
+            defaultMode: 0555
+        - name: base
+          configMap:
+            name: {{ .Release.Name }}-config
+        - name: conf
+          emptyDir:
+            medium: Memory
+
+      # 容器组
+      containers:
+        - name: mysql
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: ["/usr/local/bin/docker-entrypoint.sh"]
+          args: ["--ignore-db-dir=lost+found"]
+          
+          # 容器端口
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+
+          # 环境变量 
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-root
+                  key: password
+
+          # 持久卷挂载
+          volumeMounts:
+            - name: host-time
+              mountPath: /etc/localtime
+              readOnly: true
+            - name: data
+              readOnly: false
+              mountPath: /var/lib/mysql
+            - name: log
+              readOnly: false
+              mountPath: /var/lib/mysql-log
+            - name: entrypoint
+              mountPath: /usr/local/bin/docker-entrypoint.sh
+              subPath: entrypoint
+              readOnly: true
+            - name: conf
+              mountPath: /etc/mysql/conf.d
+              readOnly: false
+            - name: base
+              mountPath: /etc/mysql/conf.d/base.cnf
+              subPath: base
+              readOnly: true
+
+  # 持久卷申领模版
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "local-storage"
+      resources:
+        requests:
+          storage: 10Gi
+
+  - metadata:
+      name: log
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "local-storage"
+      resources:
+        requests:
+          storage: 10Gi
